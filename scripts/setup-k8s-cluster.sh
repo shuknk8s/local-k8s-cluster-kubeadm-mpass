@@ -14,7 +14,9 @@ export KUBECONFIG=$PWD/k8s-cluster.yaml
 kubectl get nodes -o wide -w
 # install metrics-server
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-# Metrics server pod fails to start with default secure tls - add --kubelet-insecure-tls flag - NOT recommended for production
+
+# Metrics server pod fails to start as Kubelet certificate needs to be signed by Cluster Certificate Authority-  NOT recommended for production
+# Disable certificate validation by passing --kubelet-insecure-tls to Metrics Server deploymnet as the setup does not involve certficate signing by Cluster Certificate Authority
 kubectl patch deployment metrics-server -n kube-system --type 'json' -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 sleep 20
 kubectl get deployment metrics-server -n kube-system -w
