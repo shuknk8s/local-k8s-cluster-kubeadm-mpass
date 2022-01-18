@@ -1,34 +1,33 @@
-#multipass launch --name master-node --mem 4G --cpus 2 --disk 20G --verbose
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl
 
-#multipass shell master-node << EOF 
-sudo -i
-apt-get upgrade -y
-apt-get update -y
-apt-get install -y apt-transport-https ca-certificates curl
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
 
-curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" |  tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
 
-apt-get update -y
-#apt-get install -y kubeadm=1.22.4-00 kubelet=1.22.4-00 kubectl=1.22.4-00
-apt-get install -y kubeadm kubelet kubectl
-apt-mark hold kubelet kubeadm kubectl
 
-apt-get install containerd -y
-mkdir -p /etc/containerd
-containerd config default  /etc/containerd/config.toml
-echo "net.bridge.bridge-nf-call-iptables = 1" >> /etc/sysctl.conf
-sysctl --system
-modprobe overlay
-modprobe br_netfilter
-hostnamectl set-hostname master
-swapoff -a
-echo '1' > /proc/sys/net/ipv4/ip_forward
-kubeadm init
-exit
+
+sudo apt-get install containerd -y
+sudo mkdir -p /etc/containerd
+sudo containerd config default  /etc/containerd/config.toml
+
+echo "net.bridge.bridge-nf-call-iptables = 1" | sudo tee -a /etc/sysctl.conf
+sudo sysctl --system
+sudo modprobe overlay
+sudo modprobe br_netfilter
+sudo hostnamectl set-hostname master
+sudo swapoff -a
+echo '1' | sudo tee /proc/sys/net/ipv4/ip_forward
+
+sudo kubeadm init
+
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Install Pod Networking Solution - options are Calico, Weave-Net, Clium, Flannel etc - using weave net for the demo
 kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
-#EOF
